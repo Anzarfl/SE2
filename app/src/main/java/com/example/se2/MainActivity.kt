@@ -19,6 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.*
 import java.net.Socket
 
@@ -27,7 +30,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                AppSurface()
+                AppSurface() // Die Hauptoberfläche wird gerendert
             }
         }
     }
@@ -35,6 +38,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppSurface() {
+    // Zustandsvariablen für die Eingabe der Matrikelnummer und die Serverantwort
     val studentId = remember { mutableStateOf("") }
     val serverResponse = remember { mutableStateOf("") }
 
@@ -42,11 +46,11 @@ fun AppSurface() {
         modifier = Modifier.padding(16.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            GreetingMessage()
-            InputField(studentId)
-            ActionButtons(studentId, serverResponse)
+            GreetingMessage() // Anzeige der Begrüßungsnachricht
+            InputField(studentId) // Textfeld für die Eingabe der Matrikelnummer
+            ActionButtons(studentId, serverResponse) // Aktionsbuttons zum Abfragen des Servers und zur lokalen Verarbeitung
             if (serverResponse.value.isNotEmpty()) {
-                ResponseDisplay(serverResponse.value)
+                ResponseDisplay(serverResponse.value) // Anzeige der Serverantwort, falls vorhanden
             }
         }
     }
@@ -54,14 +58,16 @@ fun AppSurface() {
 
 @Composable
 fun GreetingMessage() {
+    // Begrüßungsnachricht anzeigen
     Text(
         text = "Bitte Matrikelnummer eingeben:",
         modifier = Modifier.padding(16.dp)
-        )
+    )
 }
 
 @Composable
 fun InputField(state: MutableState<String>) {
+    // Textfeld für die Eingabe der Matrikelnummer
     TextField(
         value = state.value,
         onValueChange = { newValue ->
@@ -78,36 +84,68 @@ fun ActionButtons(idState: MutableState<String>, responseState: MutableState<Str
     val coroutineScope = rememberCoroutineScope()
 
     Row {
+        // Button zum Abfragen des Servers
         Button(onClick = {
             coroutineScope.launch {
                 responseState.value = queryServer(idState.value)
             }
         }) {
-            Text("Query Server")
+            Text("Server abfragen")
         }
         Spacer(modifier = Modifier.width(8.dp))
+        // Button fuer Berechnung
         Button(onClick = {
             responseState.value = localProcessing(idState.value)
         }) {
-            Text("Local Process")
+            Text("Berechnung")
         }
     }
 }
 
 @Composable
 fun ResponseDisplay(message: String) {
-    Text(text = message, modifier = Modifier.padding(16.dp))
+    // Anzeige der Serverantwort
+    Text(
+        text = message,
+        modifier = Modifier.padding(16.dp),
+        textAlign = TextAlign.Center,
+        color = Color.Black,
+        fontSize = 18.sp
+    )
 }
 
-
-
 fun localProcessing(input: String): String {
+    // Lokale Verarbeitung der Matrikelnummer
+    val digits = input.toCharArray()
 
-    return input
+    // Arrays für gerade und ungerade Ziffern erstellen
+    val evenDigits = StringBuilder()
+    val oddDigits = StringBuilder()
+
+    // Ziffern nach Geradheit sortieren
+    digits.forEach { digit ->
+        if (digit.isDigit()) {
+            if (digit.toInt() % 2 == 0) {
+                evenDigits.append(digit)
+            } else {
+                oddDigits.append(digit)
+            }
+        }
+    }
+
+    // Sortieren der Ziffern
+    val sortedEvenDigits = evenDigits.toString().toCharArray().sorted().joinToString("")
+    val sortedOddDigits = oddDigits.toString().toCharArray().sorted().joinToString("")
+
+    // Ergebnis zusammenstellen
+    val sortedNumber = sortedEvenDigits + sortedOddDigits
+
+    return sortedNumber
 
 }
 
 suspend fun queryServer(input: String): String = withContext(Dispatchers.IO) {
+    // Abfrage des Servers
     try {
         Socket("se2-submission.aau.at", 20080).use { socket ->
 
@@ -125,7 +163,7 @@ suspend fun queryServer(input: String): String = withContext(Dispatchers.IO) {
         }
     } catch (e: Exception) {
         "Error connecting to server: ${e.message}"
-    }
+        }
 }
 
 
